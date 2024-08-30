@@ -1,9 +1,51 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 
-import 'package:thence_task/plant_screen.dart';
+void main() {
+  final plantBloc = PlantBloc(httpClient: http.Client());
+
+  runApp(
+    BlocProvider(
+      create: (context) => plantBloc..add(FetchPlants()),
+      child: MyApp(),
+    ),
+  );
+}
+
+class MyApp extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    final goRouter = GoRouter(
+      routes: [
+        GoRoute(
+          path: '/',
+          builder: (context, state) => PlantListScreen(),
+        ),
+        GoRoute(
+          path: '/product/:id',
+          builder: (context, state) {
+            final id = state.pathParameters['id']!;
+            return PlantDetailScreen(id: id);
+          },
+        ),
+        GoRoute(
+          path: '/404',
+          builder: (context, state) => ProductNotFoundScreen(),
+        ),
+      ],
+      errorBuilder: (context, state) {
+        return ProductNotFoundScreen();
+      },
+    );
+
+    return MaterialApp.router(
+      routerConfig:goRouter
+    );
+  }
+}
 
 class Getplantmodel {
   List<Datum> data;
@@ -165,7 +207,6 @@ class PlantListScreen extends StatelessWidget {
                     itemCount: state.plants.length,
                     itemBuilder: (context, index) {
                       final plant = state.plants[index];
-                      // Pass the context to the _buildPlantListTile method
                       return _buildPlantListTile(context, plant);
                     },
                   );
@@ -192,7 +233,6 @@ class PlantListScreen extends StatelessWidget {
     );
   }
 
-  // Update the _buildPlantListTile method to accept context as a parameter
   Widget _buildPlantListTile(BuildContext context, Datum plant) {
     return Card(
       margin: EdgeInsets.symmetric(horizontal: 10, vertical: 5),
@@ -231,39 +271,133 @@ class PlantListScreen extends StatelessWidget {
           ],
         ),
         onTap: () {
-          Navigator.of(context).push(
-            MaterialPageRoute(
-              builder: (context) => PlantDetailScreen(
-                imageUrl: plant.imageUrl,
-                name: plant.name,
-                rating: plant.rating,
-                price: '${plant.price} ${plant.priceUnit}',
-                description: plant.description,
-              ),
-            ),
-          );
+          context.go('/product/${plant.id}');
         },
       ),
     );
   }
 }
 
+class PlantDetailScreen extends StatelessWidget {
+  final String id;
 
-void main() {
-  runApp(MyApp());
-}
+  const PlantDetailScreen({required this.id});
 
-class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Plant App',
-      theme: ThemeData(
-        primarySwatch: Colors.green,
+    return BlocBuilder<PlantBloc, PlantState>(
+      builder: (context, state) {
+        if (state is PlantLoaded) {
+          final plant = state.plants.firstWhere(
+            (plant) => plant.id.toString() == id,
+            orElse: () => Datum(
+              id: -1,
+              categoryId: -1,
+              imageUrl: '',
+              name: 'Not Found',
+              rating: 0.0,
+              displaySize: 0,
+              availableSize: [],
+              unit: '',
+              price: '',
+              priceUnit: '',
+              description: 'Product not found',
+            ),
+          );
+
+          if (plant.id == -1) {
+            return ProductNotFoundScreen();
+          }
+
+          return PlantDetailScreenContent(
+            imageUrl: plant.imageUrl,
+            name: plant.name,
+            rating: plant.rating,
+            price: plant.price,
+            description: plant.description,
+          );
+        } else if (state is PlantError) {
+          return ProductNotFoundScreen();
+        } else {
+          return Center(child: CircularProgressIndicator());
+        }
+      },
+    );
+  }
+}
+
+class PlantDetailScreenContent extends StatelessWidget {
+  final String imageUrl;
+  final String name;
+  final double rating;
+  final String price;
+  final String description;
+
+  const PlantDetailScreenContent({
+    required this.imageUrl,
+    required this.name,
+    required this.rating,
+    required this.price,
+    required this.description,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(name),
       ),
-      home: BlocProvider(
-        create: (context) => PlantBloc(httpClient: http.Client())..add(FetchPlants()),
-        child: PlantListScreen(),
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Image.network(imageUrl),
+            SizedBox(height: 16),
+            Text(
+              name,
+              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+            ),
+            SizedBox(height: 8),
+            Row(
+              children: [
+                Icon(Icons.star, color: Colors.orange, size: 20),
+                SizedBox(width: 4),
+                Text(rating.toString(), style: TextStyle(fontWeight: FontWeight.bold)),
+              ],
+            ),
+            SizedBox(height: 8),
+            Text(price, style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.green)),
+            SizedBox(height: 16),
+            Text(description),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class ProductNotFoundScreen extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text('Not Found'),
+      ),
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text('Product not found', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+            SizedBox(height: 20),
+            ElevatedButton(
+              onPressed: () {
+                context.go('/');
+              },
+              child: Text('Back to Home'),
+            ),
+          ],
+        ),
       ),
     );
   }
