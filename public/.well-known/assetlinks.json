@@ -1,0 +1,14 @@
+[
+    {
+      "relation": [
+        "delegate_permission/common.handle_all_urls"
+      ],
+      "target": {
+        "namespace": "android_app",
+        "package_name": "com.example.thence_task",
+        "sha256_cert_fingerprints": [
+          "FC:2F:87:91:F0:EB:9E:46:27:16:C7:A1:53:25:15:5F:88:61:F5:5D:91:60:AF:09:8B:51:D7:FE:78:0D:ED:05"
+        ]
+      }
+    }
+  ]
