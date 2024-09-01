@@ -25,7 +25,7 @@ class MyApp extends StatelessWidget {
           builder: (context, state) => PlantListScreen(),
         ),
         GoRoute(
-          path: '/product/:id',
+          path: '/flutter/assignment/product/:id',
           builder: (context, state) {
             final id = state.pathParameters['id']!;
             return PlantDetailScreen(id: id);
@@ -271,7 +271,7 @@ class PlantListScreen extends StatelessWidget {
           ],
         ),
         onTap: () {
-          context.go('/product/${plant.id}');
+          context.go('/flutter/assignment/product/${plant.id}');
         },
       ),
     );
