@@ -4,7 +4,6 @@ import 'package:http/http.dart' as http;
 import 'package:thence_task/block/plant_bloc.dart';
 import 'router.dart';
 
-
 void main() {
   final plantBloc = PlantBloc(httpClient: http.Client());
 
